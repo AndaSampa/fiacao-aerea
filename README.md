@@ -20,7 +20,7 @@ Atravéz de filtragens simples dos dados do ALS LiDAR 3D da cidade é possível 
 
 Isso é possível fazer utilizando o software CloudCompare, conforme o vídeo:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/NwZoCtJKs6U" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Fiação aérea na cidade de São Paulo por LiDAR 3D com CloudCompare e Qgis usando arquivos LAZ](http://img.youtube.com/vi/NwZoCtJKs6U/0.jpg)](https://youtu.be/NwZoCtJKs6U "Video Title")
 
 ## Resultados
 
