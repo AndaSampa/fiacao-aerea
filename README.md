@@ -14,7 +14,7 @@ Sendo assim, esse repositório se dedica a estudar, documentar e persistir méto
 
 Atravéz de filtragens simples dos dados do ALS LiDAR 3D da cidade é possível destacar e validar visualmente os cabeamentos e fiações aéreas, seguindo os critérios considerando apenas os pontos que satisfassam as seguintes condições:
 * Que seja o primeiro retorno `return_number == 1`
-* Que ele não esteja classificado `classification == 19`
+* Que seja classificado como 'Overhead Structure' `classification == 19`
 * Que a altura em relação ao solo seja maior que 4 metros `HAG >= 4`
 * Que o valor da intensidade seja baixo, pŕoximo a 1 `intensity == 1`
 
