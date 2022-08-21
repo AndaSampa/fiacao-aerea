@@ -18,7 +18,9 @@ Atravéz de filtragens simples dos dados do ALS LiDAR 3D da cidade é possível 
 * Que a altura em relação ao solo seja maior que 4 metros `HAG >= 4`
 * Que o valor da intensidade seja baixo, pŕoximo a 1 `intensity == 1`
 
-Isso é possível fazer utilizando o software CloudCompare, conforme o vídeo
+Isso é possível fazer utilizando o software CloudCompare, conforme o vídeo:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/NwZoCtJKs6U" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Resultados
 
