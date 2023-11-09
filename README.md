@@ -26,6 +26,12 @@ Isso é possível fazer utilizando o software CloudCompare, conforme o vídeo:
 
 Os critérios estabelecidos destacar visualmente os cabeamentos aéreos e suas nuânces que podem ser convertidos em raster e quantficados em relação a densidade de pontos a cada unidade espacial, altura ou alturas (no caso de múltiplos níveis) em relação ao solo, continuidade, rede e ainda podem ser agregados espacialmente, por exemplo, em relação aos polígonos de calçada
 
+Serão produtos de resultados:
+* Extensão da fiação aérea total da cidade em espaços públicos
+* Quantidade de interações entre arborização e fiação aérea
+* Agregação espacial desses dados
+* Proximidade com edificações e suas agregações espaciais
+
 ## Próximos passos
 
 * Estudar bibliografia e métodos sobre o tema
