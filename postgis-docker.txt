@@ -1,0 +1,1 @@
+docker run --name=postgis -d -e POSTGRES_USER=postgres -e POSTGRES_PASS=1234 -e POSTGRES_DBNAME=gis -e ALLOW_IP_RANGE=0.0.0.0/0 -p 5433:5432 -v pg_data:/var/lib/postgresql --restart=always kartoza/postgis
