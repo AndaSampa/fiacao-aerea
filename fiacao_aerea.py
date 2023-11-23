@@ -1,6 +1,7 @@
 import pdal
 import json
 import geopandas as gpd
+from shapely.geometry import Polygon
 import pandas as pd
 from sqlalchemy import create_engine, text
 import glob
@@ -22,7 +23,7 @@ def pipeline_fiacao(scm):
     pipeline = [
         {
             "type": "readers.las",
-            "filename": f'data/sample/MDS_color_{smc}.laz',
+            "filename": f'data/sample/MDS_color_{scm}.laz',
             "override_srs": "EPSG:31983"
         },
         {
@@ -52,7 +53,7 @@ def pipeline_fiacao(scm):
             "format":"csv",
             "order":"X,Y",
             "keep_unspecified":"false",
-            "filename":"results/sample/MDS_{scm}_1000-filtered.csv"
+            "filename":f"results/sample/MDS_{scm}_1000-filtered.csv"
         }
         
     ]
@@ -89,8 +90,8 @@ def pipeline_massa_arborea(smc):
             "where": "(Classification == 5)",
             "default_srs": "EPSG:31983"
         },
-        
-    ]   
+    ] 
+    return pipeline  
 
 def processa(scm):
     # Processando o pipeline da fiacao
@@ -98,28 +99,45 @@ def processa(scm):
     _ = fiacao.execute()
 
     # Lendo pontos
-    df_xy = pd.read_csv('results/sample/MDS_{scm}_1000-filtered.csv')
+    df_xy = pd.read_csv(f'results/sample/MDS_{scm}_1000-filtered.csv')
     gdf_xy = gpd.GeoDataFrame(geometry=gpd.points_from_xy(x = df_xy.X, y = df_xy.Y))
 
     # Gerando buffer
-    gdf_xy.geometry = gdf_xy.buffer(2.5).dissolve()
+    gdf_xy.geometry = gdf_xy.buffer(2.5)
+    gdf_xy = gdf_xy.dissolve()
+    # gdf_xy = gdf_xy.simplify(1).explode().reset_index()
+    # gdf_xy.geometry = gdf_xy.geometry.make_valid()
 
     # Abrindo no PostGis
-    gpd.GeoDataFrame(geometry=gdf_xy.simplify(1)).explode().reset_index().to_postgis(f'fiacao_buffer_dissolvido_{scm}', engine, if_exists='replace')
-
+    gdf_xy = gpd.GeoDataFrame(geometry=gdf_xy.simplify(1))
+    gdf_xy = gdf_xy.explode()
+    gdf_xy.geometry = gdf_xy.geometry.exterior
+    gdf_xy.geometry = gdf_xy.geometry.apply(lambda x: Polygon(x.coords))
+    # gdf_xy.geometry = gdf_xy.geometry.make_valid()
+    gdf_xy.loc[gdf_xy.is_valid].reset_index().to_postgis('fiacao_buffer_dissolvido', engine, if_exists='replace')
     # gerando a query
-    query = f'select ST_ApproximateMedialAxis(geometry) as geometry from fiacao_buffer_dissolvido_{scm};'
+    query = f'select ST_ApproximateMedialAxis(geometry) as geometry from "fiacao_buffer_dissolvido";'
 
     # gerando resultados
     gdf_fiacao = gpd.read_postgis(text(query), con=engine.connect(), geom_col='geometry')
     gdf_fiacao = gdf_fiacao.set_crs(epsg=31983, allow_override=True)
     gdf_fiacao = gdf_fiacao.loc[(gdf_fiacao.length > 10.0), :]
+    
+    # recortar pela geometria do SCM
+    gdf_fiacao = gdf_fiacao.clip(Scm(scm).geometry)
+    # simplificar a geometria resultante
+    gdf_fiacao.geometry = gdf_fiacao.geometry.simplify(1)
+    # Salva o resultado
     gdf_fiacao.to_file(f'results/sample/fiacao_{scm}.gpkg', driver='GPKG')
 
-    # TODO
-    # simplificar a geometria resultante
-    # recortar pela geometria do SCM
     # remover tabela do PostGis
+    # drop = f'DROP TABLE IF EXISTS "fiacao_buffer_dissolvido_{scm}";'
+    # print('passando ...')
+    # with engine.connect() as connection:
+    #     _ = connection.execute(text(drop))
+    #     connection.commit()
+
+    # print("passou!")
 
     ## Massa Arbórea e conflitos
 
@@ -127,10 +145,10 @@ def processa(scm):
     massa_arborea = pdal.Pipeline(json.dumps(pipeline_massa_arborea(scm)))
     _ = massa_arborea.execute()
 
-    ## TODO
     # gera polígono dos contornos da massa arbórea
-    !gdal_contour -p -amax ELEV_MAX -amin ELEV_MIN -b 1 -i 1.0 -f "GPKG" /home/feromes/dev/fiacao-aerea/results/sample/MDS_3316-221-vegetation.tiff /home/feromes/dev/fiacao-aerea/results/sample/MDS_3316-221-vegetacao-countor.gpkg
-    gdf_countor = gpd.read_file('results/sample/MDS_3316-221-vegetacao-countor.gpkg')
+    os.system(f'gdal_contour -p -amax ELEV_MAX -amin ELEV_MIN -b 1 -i 1.0 -f "GPKG" /home/feromes/dev/fiacao-aerea/results/sample/MDS_{scm}-vegetation.tiff /home/feromes/dev/fiacao-aerea/results/sample/MDS_{scm}-vegetacao-countor.gpkg')
+
+    gdf_countor = gpd.read_file(f'results/sample/MDS_{scm}-vegetacao-countor.gpkg')
     gdf_countor = gpd.GeoDataFrame(gdf_countor.explode().reset_index())
 
     # gdf_fiacao = gpd.read_file(f'results/sample/fiacao_{scm}.gpkg', driver='GPKG')
@@ -147,14 +165,21 @@ def processa(scm):
 
     ## TODO 
     # salvar a quantidade de conflitos prováveis
+
     # recortar pela geometria do SCM
+    gdf_countor_intersects = gdf_countor_intersects.clip(Scm(scm).geometry)
 
     # salvando o resultado dos conflitos
     gdf_countor_intersects.to_file(f'results/sample/arvores_com_interseccao_com_rede_{scm}.gpkg', driver='GPKG')
 
-    ## TODO
-    # Gerar output do percentual processado
+    return None
 
+def processa_tudo():
+    folder = ('data/sample/*.laz')
+    for file in glob.glob(folder):
+        scm = file.split('.')[0][-8:]
+        print(scm)
+        processa(scm)
     return None
 
 def pos_processamento():
@@ -169,13 +194,10 @@ def main():
         # Processa os SCMS na sequencia
         for scm in sys.argv[1:]:
             print(Scm(scm).scm)
-
-            ## TODO
-            # Utilizar o Pool de multiprocessamento
-
+            processa(scm)
     else:
-        print(gdf_articulacao.shape)
-        # processa_tudo()
+        # print(Scm(scm).scm)
+        processa_tudo()
 
 if __name__ == '__main__':
     main()
