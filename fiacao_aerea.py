@@ -163,9 +163,6 @@ def processa(scm):
     # retornando o buffer
     gdf_countor_intersects.geometry = gdf_countor_intersects.buffer(-1)
 
-    ## TODO 
-    # salvar a quantidade de conflitos prováveis
-
     # recortar pela geometria do SCM
     gdf_countor_intersects = gdf_countor_intersects.clip(Scm(scm).geometry)
 
